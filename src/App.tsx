@@ -1,122 +1,282 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import {
+  Box,
+  Typography,
+  Input,
+  Button,
+  Select,
+  Option,
+  Checkbox,
+  FormControl,
+  FormLabel,
+  FormHelperText,
+  Card,
+  Divider,
+} from "@mui/joy";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState, useEffect } from "react";
+import { formSchema, type FormData } from "./schema";
 
-function App() {
-  const [count, setCount] = useState(0)
+const parseBRL = (value: string) => {
+  return Number(value.replace(/[^\d]/g, "")) / 100;
+};
+
+const formatBRL = (value: number) =>
+  value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+
+export default function App() {
+  const [totalPrice, setTotalPrice] = useState<number | null>(null);
+
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      productType: undefined,
+      threadCount: 0,
+      hoursWorked: 1,
+      hourlyRate: 0,
+      basePrice: 30,
+      hoopSizePrice: 25,
+      fabricPrice: 5,
+      hasPatternFabric: false,
+      extraCost: 0,
+    },
+  });
+
+  const productType = watch("productType");
+
+  useEffect(() => {
+    if (productType === "ecobag") {
+      setValue("hourlyRate", 11);
+    } else if (productType === "hoop") {
+      setValue("hourlyRate", 10);
+    }
+  }, [productType, setValue]);
+
+  const onSubmit = (data: FormData) => {
+    const baseCost = data.threadCount * 5 + 2;
+
+    let total;
+
+    if (data.productType === "ecobag") {
+      total =
+        baseCost +
+        data.hoursWorked * data.hourlyRate +
+        (data.basePrice || 0) +
+        (data.extraCost || 0);
+    } else {
+      total =
+        baseCost +
+        data.hoursWorked * data.hourlyRate +
+        (data.hoopSizePrice || 0) +
+        (data.fabricPrice || 0) +
+        (data.hasPatternFabric ? 5 : 0) +
+        0.05 +
+        1.5 +
+        (data.extraCost || 0);
+    }
+
+    setTotalPrice(total);
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <Box sx={{ maxWidth: 520, mx: "auto", p: 2 }}>
+      <Card variant="outlined" sx={{ p: 2, gap: 2 }}>
+        <Typography level="h1" sx={{ marginBottom: "-24px" }}>
+          Bordadicos.
+        </Typography>
+        <Typography level="h3">Calculadora de orçamento de bordados</Typography>
+
+        <Box
+          component="form"
+          onSubmit={handleSubmit(onSubmit)}
+          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
         >
-          Count is {count}
-        </button>
-      </section>
+          <FormControl error={!!errors.productType}>
+            <FormLabel>Tipo de produto</FormLabel>
+            <Controller
+              name="productType"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  onChange={(_, value) => field.onChange(value)}
+                >
+                  <Option value="ecobag">Ecobag</Option>
+                  <Option value="hoop">Bastidor</Option>
+                </Select>
+              )}
+            />
+            <FormHelperText>{errors.productType?.message}</FormHelperText>
+          </FormControl>
 
-      <div className="ticks"></div>
+          {productType && (
+            <>
+              <Divider />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+              <Typography level="title-md">Detalhes do desenho</Typography>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+              <FormControl error={!!errors.threadCount}>
+                <FormLabel>Quantidade de linhas</FormLabel>
+                <Controller
+                  name="threadCount"
+                  control={control}
+                  render={({ field }) => <Input type="number" {...field} />}
+                />
+                <FormHelperText>{errors.threadCount?.message}</FormHelperText>
+              </FormControl>
+
+              <Divider />
+
+              <Typography level="title-md">Trabalho</Typography>
+
+              <FormControl error={!!errors.hoursWorked}>
+                <FormLabel>Horas trabalhadas</FormLabel>
+                <Controller
+                  name="hoursWorked"
+                  control={control}
+                  render={({ field }) => <Input type="number" {...field} />}
+                />
+                <FormHelperText>{errors.hoursWorked?.message}</FormHelperText>
+              </FormControl>
+
+              <FormControl error={!!errors.hourlyRate}>
+                <FormLabel>Valor por hora</FormLabel>
+                <Controller
+                  name="hourlyRate"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      value={field.value ? formatBRL(field.value) : ""}
+                      onChange={(e) => field.onChange(parseBRL(e.target.value))}
+                    />
+                  )}
+                />
+                <FormHelperText>{errors.hourlyRate?.message}</FormHelperText>
+              </FormControl>
+
+              <Divider />
+
+              {productType === "ecobag" && (
+                <>
+                  <Typography level="title-md">Ecobag</Typography>
+
+                  <FormControl error={!!errors.basePrice}>
+                    <FormLabel>Valor base</FormLabel>
+                    <Controller
+                      name="basePrice"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          value={field.value ? formatBRL(field.value) : ""}
+                          onChange={(e) =>
+                            field.onChange(parseBRL(e.target.value))
+                          }
+                        />
+                      )}
+                    />
+                    <FormHelperText>{errors.basePrice?.message}</FormHelperText>
+                  </FormControl>
+                </>
+              )}
+
+              {productType === "hoop" && (
+                <>
+                  <Typography level="title-md">Bastidor</Typography>
+
+                  <FormControl error={!!errors.hoopSizePrice}>
+                    <FormLabel>Tamanho</FormLabel>
+                    <Controller
+                      name="hoopSizePrice"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          value={field.value ? formatBRL(field.value) : ""}
+                          onChange={(e) =>
+                            field.onChange(parseBRL(e.target.value))
+                          }
+                        />
+                      )}
+                    />
+                  </FormControl>
+
+                  <FormControl error={!!errors.fabricPrice}>
+                    <FormLabel>Tecido</FormLabel>
+                    <Controller
+                      name="fabricPrice"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          value={field.value ? formatBRL(field.value) : ""}
+                          onChange={(e) =>
+                            field.onChange(parseBRL(e.target.value))
+                          }
+                        />
+                      )}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <Controller
+                      name="hasPatternFabric"
+                      control={control}
+                      render={({ field }) => (
+                        <Checkbox
+                          label="Tecido estampado (+R$5)"
+                          checked={field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                        />
+                      )}
+                    />
+                  </FormControl>
+                </>
+              )}
+
+              <Divider />
+
+              <Typography level="title-md">Custos extras</Typography>
+
+              <FormControl>
+                <FormLabel>Valor adicional</FormLabel>
+                <Controller
+                  name="extraCost"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      value={field.value ? formatBRL(field.value) : ""}
+                      onChange={(e) => field.onChange(parseBRL(e.target.value))}
+                    />
+                  )}
+                />
+              </FormControl>
+
+              <Button type="submit" size="lg">
+                Calcular
+              </Button>
+            </>
+          )}
+        </Box>
+
+        {totalPrice !== null && (
+          <Card
+            variant="soft"
+            color="primary"
+            sx={{ mt: 2, textAlign: "center" }}
+          >
+            <Typography level="title-lg">
+              Total: {formatBRL(totalPrice)}
+            </Typography>
+          </Card>
+        )}
+      </Card>
+    </Box>
+  );
 }
-
-export default App
